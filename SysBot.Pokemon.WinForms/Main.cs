@@ -3,6 +3,7 @@ using SysBot.Base;
 using SysBot.Pokemon.Helpers;
 using SysBot.Pokemon.WinForms.Properties;
 using SysBot.Pokemon.Z3;
+using SysBot.Web;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -75,6 +76,10 @@ public sealed partial class Main : Form
         InitUtil.InitializeStubs(Config.Mode);
         _isFormLoading = false;
         UpdateBackgroundImage(Config.Mode);
+
+        // Web-API starten auf Port 6500
+        WebApiIntegration.StartWebApi(RunningEnvironment, 6500);
+        LogUtil.LogInfo("Web-API wurde auf Port 6500 gestartet.", "WebServer");
     }
 
     private static IPokeBotRunner GetRunner(ProgramConfig cfg) => cfg.Mode switch
@@ -193,26 +198,20 @@ public sealed partial class Main : Form
 
     private void Main_FormClosing(object sender, FormClosingEventArgs e)
     {
-        if (IsUpdating)
+        DialogResult promptResult = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Are you sure you want to close?", "Closing program");
+        if (promptResult == DialogResult.No)
         {
+            e.Cancel = true;
             return;
         }
-        SaveCurrentConfig();
-        var bots = RunningEnvironment;
-        if (!bots.IsRunning)
-            return;
-
-        async Task WaitUntilNotRunning()
-        {
-            while (bots.IsRunning)
-                await Task.Delay(10).ConfigureAwait(false);
-        }
-
-        // Try to let all bots hard-stop before ending execution of the entire program.
-        WindowState = FormWindowState.Minimized;
-        ShowInTaskbar = false;
-        bots.StopAll();
-        Task.WhenAny(WaitUntilNotRunning(), Task.Delay(5_000)).ConfigureAwait(true).GetAwaiter().GetResult();
+        
+        // Stop the Web API
+        SysBot.Web.WebApiIntegration.StopWebApi();
+        LogUtil.LogInfo("Web API gestoppt.", "SysBot");
+        
+        // Normale Beendigung fortsetzen
+        RunningEnvironment.StopAll();
+        LogUtil.LogInfo("Alle Bots wurden gestoppt.", "SysBot");
     }
 
     private void SaveCurrentConfig()
