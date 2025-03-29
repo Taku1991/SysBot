@@ -41,7 +41,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,12 +51,6 @@ jobs:
           CURRENT_VERSION=$(grep 'public const string Version' SysBot.Pokemon/Helpers/TradeBot.cs | sed 's/.*Version = "\(.*\)";/\1/')
           echo "Current version is $CURRENT_VERSION"
 
-      - name: Get last version
-        id: last_version
-        run: |
-          LAST_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          echo "LAST_VERSION=$LAST_VERSION" >> $GITHUB_OUTPUT
-
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -65,22 +58,13 @@ jobs:
           path: ./publish
 
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.version }}
-          release_name: Release ${{ inputs.version }}
+          name: Release ${{ inputs.version }}
           draft: false
           prerelease: false
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+          files: |
+            ./publish/MergeBot.exe
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./publish/MergeBot.exe
-          asset_name: MergeBot.exe
-          asset_content_type: application/octet-stream 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
