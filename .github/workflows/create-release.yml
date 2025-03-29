@@ -34,13 +34,12 @@ jobs:
           path: ./publish
 
       - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
+          files: |
+            ./publish/*
           tag_name: ${{ inputs.version }}
-          release_name: Release ${{ inputs.version }}
+          name: Release ${{ inputs.version }}
           draft: false
           prerelease: false
-          files: |
-            ./publish/* 
+          token: ${{ secrets.GITHUB_TOKEN }} 
