@@ -1,0 +1,46 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get current version
+        run: |
+          CURRENT_VERSION=$(grep 'public const string Version' SysBot.Pokemon/Helpers/TradeBot.cs | sed 's/.*Version = "\(.*\)";/\1/')
+          echo "Current version is $CURRENT_VERSION"
+
+      - name: Get last version
+        id: last_version
+        run: |
+          LAST_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "LAST_VERSION=$LAST_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: MergeBot
+          path: ./publish
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ inputs.version }}
+          release_name: Release ${{ inputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            ./publish/* 
