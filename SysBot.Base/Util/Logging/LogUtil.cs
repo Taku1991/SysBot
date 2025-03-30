@@ -17,7 +17,6 @@ public static class LogUtil
     public static readonly List<ILogForwarder> Forwarders = [];
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private static int _currentPort;
 
     static LogUtil()
     {
@@ -73,16 +72,6 @@ public static class LogUtil
     }
 
     public static void LogText(string message) => Logger.Log(LogLevel.Info, message);
-
-    public static void SetPort(int port)
-    {
-        _currentPort = port;
-    }
-
-    public static string GetLogFileName()
-    {
-        return $"SysBotLog_{_currentPort}.txt";
-    }
 
     private static void Log(string message, string identity)
     {

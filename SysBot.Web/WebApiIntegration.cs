@@ -105,7 +105,7 @@ namespace SysBot.Web
                     
                     _currentPort = attemptPort;
                     // Setze den Port auch für die Log-Datei
-                    LogUtil.SetPort(_currentPort);
+                    // LogUtil.SetPort(_currentPort); -- Diese Zeile entfernen
                     
                     // Prüfe, ob der Port verfügbar ist
                     if (IsPortAvailable(_currentPort))
@@ -341,8 +341,8 @@ namespace SysBot.Web
                 {
                     try
                     {
-                        // Verwende den Port-spezifischen Log-Dateinamen über LogUtil
-                        var logFileName = LogUtil.GetLogFileName();
+                        // Verwende den Standard-Log-Dateinamen
+                        var logFileName = "SysBotLog.txt";
                         var logPath = Path.Combine(AppContext.BaseDirectory, "logs", logFileName);
                         if (!System.IO.File.Exists(logPath))
                         {
