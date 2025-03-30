@@ -43,6 +43,18 @@ namespace SysBot.Web
             return $"SysBotLog_Port{_currentPort}.txt";
         }
 
+        // Gibt den Standardlognamen zurück, der von LogUtil verwendet wird
+        public static string GetStandardLogFileName()
+        {
+            return "SysBotLog.txt";
+        }
+        
+        // Gibt den aktuellen Port zurück
+        public static int GetCurrentPort()
+        {
+            return _currentPort;
+        }
+
         // Fügt eine Bot-Instanz zur Liste der bekannten Instanzen hinzu
         public static void AddBotInstance(string name, string host, int port)
         {
@@ -241,6 +253,19 @@ namespace SysBot.Web
                 
                 // API für Instanzen-Management
                 app.MapGet("/api/instances", () => Results.Ok(KnownInstances));
+                
+                // API für den Zugriff auf Port-spezifische Logs
+                app.MapGet("/api/portlogs", () => 
+                {
+                    var logPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "logs", GetLogFileName());
+                    if (!System.IO.File.Exists(logPath))
+                        return Results.NotFound(new { success = false, message = $"Port-spezifische Log-Datei nicht gefunden: {logPath}" });
+                    
+                    var logLines = System.IO.File.ReadLines(logPath)
+                                    .TakeLast(100)
+                                    .ToList();
+                    return Results.Ok(logLines);
+                });
                 
                 app.MapGet("/api/instances/check", () => 
                 {
