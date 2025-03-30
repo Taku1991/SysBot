@@ -5,19 +5,12 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:
-    inputs:
-      force_build:
-        description: 'Build erzwingen (ignoriert Versionscheck)'
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   version-check:
     runs-on: ubuntu-latest
     outputs:
-      current_version: ${{ steps.read_version.outputs.current_version }}
+      current_version: ${{ steps.compare_versions.outputs.current_version }}
       version_changed: ${{ steps.compare_versions.outputs.version_changed }}
     steps:
       - name: Checkout
@@ -28,7 +21,7 @@ jobs:
           CURRENT_VERSION=$(grep 'public const string Version' SysBot.Pokemon/Helpers/TradeBot.cs | sed 's/.*Version = "\(.*\)";/\1/')
           echo "Current version is $CURRENT_VERSION"
           echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
-          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
       - name: Compare Versions
         id: compare_versions
         run: |
@@ -38,15 +31,17 @@ jobs:
           echo "Current version: $CURRENT_VERSION"
           if [ "$CURRENT_VERSION" == "$LAST_VERSION" ]; then
             echo "No version change detected."
+            echo "version_changed=false" >> $GITHUB_ENV
             echo "version_changed=false" >> $GITHUB_OUTPUT
           else
             echo "Version change detected."
+            echo "version_changed=true" >> $GITHUB_ENV
             echo "version_changed=true" >> $GITHUB_OUTPUT
           fi
 
   build:
     needs: version-check
-    if: needs.version-check.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch' && github.event.inputs.force_build == 'true'
+    if: needs.version-check.outputs.version_changed == 'true'
     runs-on: windows-latest
     env:
       Project_Name: SysBot.Pokemon.WinForms/SysBot.Pokemon.WinForms.csproj
@@ -62,11 +57,11 @@ jobs:
       - name: Setup MSBuild.exe
         uses: microsoft/setup-msbuild@v2
       - name: Restore dependencies
-        run: dotnet restore ${{ env.Project_Name }} --runtime win-x64
+        run: dotnet restore ${{ env.Project_Name }} --runtime win-x86
       - name: Build
         run: dotnet build ${{ env.Project_Name }} --configuration Release --no-restore
       - name: Publish
-        run: dotnet publish ${{ env.Project_Name }} --configuration Release --output ./publish /p:PublishSingleFile=true /p:SelfContained=false /p:RuntimeIdentifier=win-x64
+        run: dotnet publish ${{ env.Project_Name }} --configuration Release --output ./publish /p:PublishSingleFile=true /p:SelfContained=false /p:RuntimeIdentifier=win-x86
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -75,7 +70,7 @@ jobs:
 
   create-release:
     needs: [version-check, build]
-    if: needs.version-check.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch' && github.event.inputs.force_build == 'true'
+    if: needs.version-check.outputs.version_changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
