@@ -21,6 +21,9 @@ namespace SysBot.Web
         private static bool _isRunning;
         private static int _currentPort = 6500; // Standardport auf 6500 geändert
         
+        // Benutzerdefinierter Pfad für Logs
+        private static string? _customLogPath = null;
+        
         // Liste aller bekannten Bot-Instanzen für das Dashboard
         private static readonly List<BotInstance> KnownInstances = new();
         
@@ -53,6 +56,23 @@ namespace SysBot.Web
         public static int GetCurrentPort()
         {
             return _currentPort;
+        }
+
+        // Setzt einen benutzerdefinierten Pfad für Log-Dateien
+        public static void SetCustomLogPath(string path)
+        {
+            _customLogPath = path;
+            LogUtil.LogInfo($"Benutzerdefinierter Log-Pfad gesetzt: {path}", "WebApi");
+        }
+        
+        // Gibt den Pfad zum Log-Verzeichnis zurück (benutzerdefiniert oder Standard)
+        public static string GetLogDirectoryPath()
+        {
+            if (!string.IsNullOrEmpty(_customLogPath))
+                return _customLogPath;
+            
+            // Standard: Im Anwendungsverzeichnis
+            return Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "logs");
         }
 
         // Fügt eine Bot-Instanz zur Liste der bekannten Instanzen hinzu
@@ -94,6 +114,37 @@ namespace SysBot.Web
         {
             if (_isRunning)
                 return;
+
+            // Setze das aktuelle Ausführungsverzeichnis als benutzerdefinierten Log-Pfad
+            try 
+            {
+                var applicationPath = AppDomain.CurrentDomain.BaseDirectory;
+                var logsPath = Path.Combine(applicationPath, "logs");
+                
+                // Wenn der Ordner nicht existiert, versuche es mit dem Verzeichnis, in dem die EXE liegt
+                if (!Directory.Exists(logsPath))
+                {
+                    var exePath = Path.GetDirectoryName(Environment.ProcessPath);
+                    if (!string.IsNullOrEmpty(exePath))
+                    {
+                        logsPath = Path.Combine(exePath, "logs");
+                        if (Directory.Exists(logsPath))
+                        {
+                            SetCustomLogPath(logsPath);
+                            LogUtil.LogInfo($"Log-Pfad auf Ausführungsverzeichnis gesetzt: {logsPath}", "WebServer");
+                        }
+                    }
+                }
+                else
+                {
+                    SetCustomLogPath(logsPath);
+                    LogUtil.LogInfo($"Log-Pfad auf aktuelles Verzeichnis gesetzt: {logsPath}", "WebServer");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogUtil.LogError($"Fehler beim Setzen des Log-Pfads: {ex.Message}", "WebServer");
+            }
 
             // Alle aktiven Ports abrufen, um Doppelbelegung zu vermeiden
             var activePorts = GetActiveTcpPorts();
@@ -257,7 +308,7 @@ namespace SysBot.Web
                 // API für den Zugriff auf Port-spezifische Logs
                 app.MapGet("/api/portlogs", () => 
                 {
-                    var logPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "logs", GetLogFileName());
+                    var logPath = Path.Combine(GetLogDirectoryPath(), GetLogFileName());
                     if (!System.IO.File.Exists(logPath))
                         return Results.NotFound(new { success = false, message = $"Port-spezifische Log-Datei nicht gefunden: {logPath}" });
                     
@@ -265,6 +316,13 @@ namespace SysBot.Web
                                     .TakeLast(100)
                                     .ToList();
                     return Results.Ok(logLines);
+                });
+                
+                // API für den aktuellen Log-Pfad
+                app.MapGet("/api/logpath", () =>
+                {
+                    var path = GetLogDirectoryPath();
+                    return Results.Ok(new { path = path, exists = Directory.Exists(path) });
                 });
                 
                 app.MapGet("/api/instances/check", () => 
@@ -368,7 +426,7 @@ namespace SysBot.Web
                     {
                         // Verwende den Standard-Log-Dateinamen
                         var logFileName = "SysBotLog.txt";
-                        var logPath = Path.Combine(AppContext.BaseDirectory, "logs", logFileName);
+                        var logPath = Path.Combine(GetLogDirectoryPath(), logFileName);
                         if (!System.IO.File.Exists(logPath))
                         {
                             LogUtil.LogInfo($"Log-Datei nicht gefunden: {logPath}", "WebApi");

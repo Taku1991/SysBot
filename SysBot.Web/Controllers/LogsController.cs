@@ -15,13 +15,13 @@ public class LogsController : ControllerBase
         try
         {
             // Versuche zuerst, die Standard-Log-Datei zu lesen
-            var standardLogPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "logs", "SysBotLog.txt");
+            var standardLogPath = Path.Combine(WebApiIntegration.GetLogDirectoryPath(), "SysBotLog.txt");
             
             // Wenn diese nicht existiert, versuche die Port-spezifische Log-Datei zu lesen
             if (!System.IO.File.Exists(standardLogPath))
             {
                 var currentPort = WebApiIntegration.GetCurrentPort();
-                var portLogPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "logs", $"SysBotLog_Port{currentPort}.txt");
+                var portLogPath = Path.Combine(WebApiIntegration.GetLogDirectoryPath(), $"SysBotLog_Port{currentPort}.txt");
                 
                 if (!System.IO.File.Exists(portLogPath))
                     return NotFound(new { success = false, message = $"Keine Logs verfügbar. Log-Datei nicht gefunden: {standardLogPath} oder {portLogPath}" });
@@ -49,13 +49,13 @@ public class LogsController : ControllerBase
         try
         {
             // Versuche zuerst, die Standard-Log-Datei zu lesen
-            var standardLogPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "logs", "SysBotLog.txt");
+            var standardLogPath = Path.Combine(WebApiIntegration.GetLogDirectoryPath(), "SysBotLog.txt");
             
             // Wenn diese nicht existiert, versuche die Port-spezifische Log-Datei zu lesen
             if (!System.IO.File.Exists(standardLogPath))
             {
                 var currentPort = WebApiIntegration.GetCurrentPort();
-                var portLogPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "logs", $"SysBotLog_Port{currentPort}.txt");
+                var portLogPath = Path.Combine(WebApiIntegration.GetLogDirectoryPath(), $"SysBotLog_Port{currentPort}.txt");
                 
                 if (!System.IO.File.Exists(portLogPath))
                     return NotFound(new { success = false, message = $"Keine Logs verfügbar. Log-Datei nicht gefunden: {standardLogPath} oder {portLogPath}" });
@@ -83,7 +83,7 @@ public class LogsController : ControllerBase
         try
         {
             var currentPort = WebApiIntegration.GetCurrentPort();
-            var portLogPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath)!, "logs", $"SysBotLog_Port{currentPort}.txt");
+            var portLogPath = Path.Combine(WebApiIntegration.GetLogDirectoryPath(), $"SysBotLog_Port{currentPort}.txt");
             
             if (!System.IO.File.Exists(portLogPath))
                 return NotFound(new { success = false, message = $"Port-spezifische Log-Datei nicht gefunden: {portLogPath}" });
