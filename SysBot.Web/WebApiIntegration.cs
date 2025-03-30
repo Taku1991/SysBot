@@ -11,6 +11,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Diagnostics;
 
 namespace SysBot.Web
 {
@@ -20,6 +21,10 @@ namespace SysBot.Web
         private static CancellationTokenSource? _cts;
         private static bool _isRunning;
         private static int _currentPort = 6500; // Standardport auf 6500 geändert
+        
+        // Statische Variable, um den gefundenen Log-Pfad zu speichern
+        private static string? _foundLogPath = null;
+        private static bool _logPathChecked = false;
         
         // Liste aller bekannten Bot-Instanzen für das Dashboard
         private static readonly List<BotInstance> KnownInstances = new();
@@ -342,9 +347,8 @@ namespace SysBot.Web
                 {
                     try
                     {
-                        // Direkter Log-Dateiname statt LogUtil.GetLogFileName()
+                        // Log-Datei im gleichen Verzeichnis wie die Anwendung
                         var logFileName = "SysBotLog.txt";
-                        var logPath = Path.Combine(AppContext.BaseDirectory, "logs", logFileName);
                         
                         // Konvertiere den QueryString-Parameter
                         int lines = 100;
@@ -353,9 +357,31 @@ namespace SysBot.Web
                             int.TryParse(linesValue, out lines);
                         }
 
-                        if (!System.IO.File.Exists(logPath))
+                        // Pfad nur einmal überprüfen und speichern
+                        if (!_logPathChecked)
                         {
-                            LogUtil.LogInfo($"Log-Datei nicht gefunden: {logPath}", "WebApi");
+                            var exePath = Process.GetCurrentProcess().MainModule.FileName;
+                            var programDir = Path.GetDirectoryName(exePath);
+                            var logPath = Path.Combine(programDir, "logs", logFileName);
+                            
+                            LogUtil.LogInfo($"Suche Log-Datei in: {logPath}", "WebApi");
+                            
+                            if (System.IO.File.Exists(logPath))
+                            {
+                                _foundLogPath = logPath;
+                                LogUtil.LogInfo($"Log-Datei gefunden in: {logPath}", "WebApi");
+                            }
+                            else
+                            {
+                                LogUtil.LogInfo($"Log-Datei nicht gefunden: {logPath}", "WebApi");
+                            }
+                            
+                            _logPathChecked = true;
+                        }
+
+                        // Wenn keine Log-Datei gefunden wurde
+                        if (_foundLogPath == null)
+                        {
                             return Results.Ok(new string[] { $"Keine Logs verfügbar. Log-Datei nicht gefunden: {logFileName}" });
                         }
 
@@ -364,7 +390,7 @@ namespace SysBot.Web
                         List<string> logLines = new List<string>();
                         try
                         {
-                            using (FileStream fs = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                            using (FileStream fs = new FileStream(_foundLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                             using (StreamReader sr = new StreamReader(fs, Encoding.UTF8))
                             {
                                 // Alle Zeilen in einen Puffer lesen
