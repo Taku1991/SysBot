@@ -70,7 +70,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SVRaidBot
+          name: MergeBot
           path: ./publish
 
   create-release:
@@ -103,7 +103,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: SVRaidBot
+          name: MergeBot
           path: ./publish
       - name: Create Release
         id: create_release
@@ -125,8 +125,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./publish/SVRaidBot.exe
-          asset_name: SVRaidBot.exe
+          asset_path: ./publish/MergeBot.exe
+          asset_name: MergeBot.exe
           asset_content_type: application/octet-stream
       - name: Update Last Known Version
         if: success()
