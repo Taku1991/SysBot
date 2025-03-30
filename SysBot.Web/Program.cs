@@ -26,7 +26,12 @@ builder.Services.AddCors(options =>
 // SysBot Singleton-Instanz registrieren
 // Diese muss in der WinForms-App initialisiert werden
 // Dummy für die Projektstruktur - wird zur Laufzeit überschrieben
-builder.Services.AddSingleton<IPokeBotRunner>(sp => null);
+builder.Services.AddSingleton<IPokeBotRunner>(sp => 
+{
+    #pragma warning disable CS8603 // Possible null reference return
+    return null;
+    #pragma warning restore CS8603 // Possible null reference return
+});
 
 var app = builder.Build();
 
