@@ -2,10 +2,10 @@ namespace SysBot.Pokemon.Helpers
 {
     public static class TradeBot
     {
-        public const string Attribution = "https://genpkm.com";
+        public const string Attribution = "https://hideoutpk.de";
 
         public const string ConfigPath = "config.json";
 
-        public const string Version = "v5.3.8";
+        public const string Version = "v1.0.1";
     }
 }
